@@ -1,0 +1,188 @@
+---
+title: "Interactive Network Visualization"
+author: "Steven Surya Tanujaya"
+date: "July 8, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Here, after learn about tidygraph, ggraph, and community detection, the `visNetwork` package is introduced to create interactive network visualization. `visNetwork` is a R package for network visualization, using `vis.js` javascript library (http://visjs.org). All the remarks and bugs returns are welcome on github : https://github.com/datastorm-open/visNetwork.  
+
+visNetwork works under `dplyr` nature and needs at least two informations :
+
+a nodes *data.frame*, with `id` column
+a edges *data.frame*, with `from` and `to` columns
+
+Let us use the media dataset.
+
+```{r}
+library(tidygraph)
+library(visNetwork)
+media.edge<-read.csv("data/Dataset1-Media-Example-EDGES.csv")
+media.node<-read.csv("data/Dataset1-Media-Example-NODES.csv")
+visNetwork(media.node, media.edge, width = "100%")
+```
+
+visNetwork individual configuration is quite simple but needs certain specific column name in order to configure color, shape, size, etc. or some `vis*` function can also be used in order to accomodate global configuration. 
+
+Node configuration (global)
+```{r}
+visNetwork(media.node, media.edge, width = "100%") %>% 
+  visNodes(shape = "square", 
+           color = list(background = "lightblue", 
+                        border = "darkblue",
+                        highlight = "yellow"),
+           shadow = list(enabled = TRUE, size = 10)) %>%
+  visLayout(randomSeed = 12) 
+```
+
+Node configuration (individual)
+
+```{r}
+nodes1 <- data.frame(media.node, 
+                    shape = ifelse(media.node$type.label=="Newspaper","circle", "square"))
+nodes1<-nodes1 %>% rename(label=media)
+
+visNetwork(nodes1, media.edge, width = "100%") %>% 
+  visNodes(color = list(background = "lightblue", 
+                        border = "darkblue",
+                        highlight = "yellow"),
+           shadow = list(enabled = TRUE, size = 10))  %>%
+  visLayout(randomSeed = 12)
+```
+
+Edge configuration (global)
+
+```{r}
+visNetwork(nodes1, media.edge, width = "100%") %>% 
+  visEdges(shadow = TRUE,
+           arrows =list(to = list(enabled = TRUE, scaleFactor = 2)),
+           color = list(color = "lightblue", highlight = "red")) %>%
+  visLayout(randomSeed = 12) # to have always the same network             
+```
+
+Edge configuration (individual)
+
+```{r}
+edges1<-media.edge %>% rename(label=type,width=weight) %>% mutate(color=ifelse(label=="hyperlink","yellow","blue"), arrows="to",width=width*0.3)
+
+visNetwork(nodes = nodes1, edges = edges1, width = "100%")
+```
+
+Group of nodes and legend
+
+```{r}
+nodes2<-media.node %>% rename(group=type.label)
+visNetwork(nodes2, edges1, width = "100%") %>% 
+  visGroups(groupname = "Newspaper", color = "lightblue", shape = "square", 
+            shadow = list(enabled = TRUE)) %>% 
+  visGroups(groupname = "TV", color = "red", shape = "triangle") %>% 
+  visGroups(groupname = "Online", color = "green", shape = "circle") %>% 
+  visLegend()
+```
+
+You can customize the shape using any icon or picture, click [here](http://datastorm-open.github.io/visNetwork/image_icon.html) for the detail.
+
+Next, there is also `visOptions` that provides us with more interactive effect.
+
+```{r}
+visNetwork(nodes2, edges1, width = "100%") %>% 
+  # darkblue square with shadow for group "A"
+  visGroups(groupname = "Newspaper", color = "lightblue", shape = "square", 
+            shadow = list(enabled = TRUE)) %>% 
+  # red triangle for group "B"
+  visGroups(groupname = "TV", color = "red", shape = "triangle") %>% 
+  visGroups(groupname = "Online", color = "green", shape = "circle") %>% 
+  visLegend() %>% 
+  visOptions(highlightNearest = T)
+```
+
+or even MORE effect!!
+
+```{r}
+visNetwork(nodes2, edges1, width = "100%") %>% 
+  # darkblue square with shadow for group "A"
+  visGroups(groupname = "Newspaper", color = "lightblue", shape = "square", 
+            shadow = list(enabled = TRUE)) %>% 
+  # red triangle for group "B"
+  visGroups(groupname = "TV", color = "red", shape = "triangle") %>% 
+  visGroups(groupname = "Online", color = "green", shape = "circle") %>% 
+  visLegend() %>% 
+  visOptions(highlightNearest = list(enabled=T,degree=2,hover=T))
+```
+
+You can also highlight some nodes/edges based on your input.
+
+Input by ID.
+
+```{r}
+visNetwork(nodes2, edges1, width = "100%") %>% 
+  # darkblue square with shadow for group "A"
+  visGroups(groupname = "Newspaper", color = "lightblue", shape = "square", 
+            shadow = list(enabled = TRUE)) %>% 
+  # red triangle for group "B"
+  visGroups(groupname = "TV", color = "red", shape = "triangle") %>% 
+  visGroups(groupname = "Online", color = "green", shape = "circle") %>% 
+  visLegend() %>% 
+  visOptions(highlightNearest = T,nodesIdSelection = T)
+```
+
+Input by Column.
+
+```{r}
+visNetwork(nodes2, edges1, width = "100%") %>% 
+  # darkblue square with shadow for group "A"
+  visGroups(groupname = "Newspaper", color = "lightblue", shape = "square", 
+            shadow = list(enabled = TRUE)) %>% 
+  # red triangle for group "B"
+  visGroups(groupname = "TV", color = "red", shape = "triangle") %>% 
+  visGroups(groupname = "Online", color = "green", shape = "circle") %>% 
+  visLegend() %>% 
+  visOptions(highlightNearest = T,selectedBy = "group")
+```
+
+We can also manipulating the network by yourself (in interactive way) just using `manipulate=T` without even type a single code!
+
+```{r}
+visNetwork(nodes2, edges1, width = "100%") %>% 
+  # darkblue square with shadow for group "A"
+  visGroups(groupname = "Newspaper", color = "lightblue", shape = "square", 
+            shadow = list(enabled = TRUE)) %>% 
+  # red triangle for group "B"
+  visGroups(groupname = "TV", color = "red", shape = "triangle") %>% 
+  visGroups(groupname = "Online", color = "green", shape = "circle") %>% 
+  visLegend() %>% 
+  visOptions(manipulation = T)
+```
+
+Last but not least, if we want to make it more interactive we can just add `visInteraction` and for more user friendly we can just add `visConfigure`.
+
+```{r}
+visNetwork(nodes2, edges1, width = "100%") %>% 
+  visGroups(groupname = "Newspaper", color = "lightblue", shape = "square", 
+            shadow = list(enabled = TRUE)) %>% 
+  visGroups(groupname = "TV", color = "red", shape = "triangle") %>% 
+  visGroups(groupname = "Online", color = "green", shape = "circle") %>% 
+  visLegend() %>% 
+  visInteraction(navigationButtons = T)
+```
+Reference:
+- http://datastorm-open.github.io/visNetwork/
+- https://cran.r-project.org/web/packages/visNetwork/vignettes/Introduction-to-visNetwork.html
+
+________________________________________________________________
+ 
+Additional: `visConfigure`
+
+```{r}
+visNetwork(nodes2, edges1, width = "100%") %>% 
+  visGroups(groupname = "Newspaper", color = "lightblue", shape = "square", 
+            shadow = list(enabled = TRUE)) %>% 
+  visGroups(groupname = "TV", color = "red", shape = "triangle") %>% 
+  visGroups(groupname = "Online", color = "green", shape = "circle") %>% 
+  visLegend() %>% 
+  visConfigure(enabled=T)
+```
