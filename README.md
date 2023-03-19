@@ -1,6 +1,6 @@
 # Interactive Network Visualization
 
-<img src="visNetwork1.png" width="600" height="400">
+<img src="visNetwork1.png" width="700" height="400">
 
 In this project I use `visNetwork` package for interactive network visualization. 
 This package use piping, similar to `tidygraph`.
